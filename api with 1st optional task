@@ -1,0 +1,49 @@
+import flask
+import os
+from flask import send_from_directory, request, jsonify
+from datetime import datetime
+
+app = flask.Flask(__name__)
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'favicon.ico', mimetype='image/favicon.png')
+
+@app.route('/')
+@app.route('/home')
+def home():
+    return "Hello World"
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    try:
+        data = request.json
+        order_id = int(data['queryResult']['parameters']['order_Id'])
+
+        # Simulate fetching shipment date from a database or API
+        iso_shipment_date = "2022-08-18T21:31:25.565Z"
+
+        # Convert ISO 8601 format to human-readable format
+        shipment_date = datetime.strptime(iso_shipment_date, "%Y-%m-%dT%H:%M:%S.%fZ")
+        formatted_shipment_date = shipment_date.strftime("%A, %d %b %Y")
+
+        response = {
+            "fulfillmentMessages": [
+                {
+                    "text": {
+                        "text": ["The shipment date for order {} is {}".format(order_id, formatted_shipment_date)]
+                    }
+                }
+            ]
+        }
+
+        return jsonify(response), 200
+    except Exception as e:
+        print("Error:", e)
+        return jsonify({"error": "An error occurred"}), 500
+if __name__ == "__main__":
+    app.secret_key = 'ItIsASecret'
+    app.debug = True
+    app.run()
+
